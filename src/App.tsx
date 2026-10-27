@@ -15,6 +15,7 @@ import { GovernorNoteGenerator } from './components/GovernorNoteGenerator';
 import { LocalGuideView } from './components/LocalGuideView';
 import { ProgressionBadge } from './components/ProgressionBadge';
 import { ProgressionDonutChart } from './components/ProgressionDonutChart';
+import { InterviewPrepView } from './components/InterviewPrepView';
 
 import { exercises } from './data/exercises';
 import { readingCurriculum } from './data/readingCurriculum';
@@ -176,6 +177,14 @@ export default function App() {
               Examen Blanc
             </button>
             <button
+              onClick={() => setActiveTab('interview')}
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
+                activeTab === 'interview' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              Entretien & Oral
+            </button>
+            <button
               onClick={() => setActiveTab('datasets')}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
                 activeTab === 'datasets' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
@@ -229,6 +238,10 @@ export default function App() {
 
         {activeTab === 'exam' && (
           <MockExamSimulator questions={mockExamQuestions} />
+        )}
+
+        {activeTab === 'interview' && (
+          <InterviewPrepView />
         )}
 
         {activeTab === 'datasets' && (

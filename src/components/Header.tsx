@@ -8,7 +8,8 @@ import {
   CheckCircle2, 
   Laptop, 
   Calculator, 
-  FileText 
+  FileText,
+  Users 
 } from 'lucide-react';
 
 export type NavigationTab = 
@@ -16,7 +17,8 @@ export type NavigationTab =
   | 'reading' 
   | 'formulas'
   | 'note-governor'
-  | 'exam' 
+  | 'exam'
+  | 'interview' 
   | 'datasets' 
   | 'study-plan'
   | 'local-guide';
@@ -114,6 +116,18 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Award className="w-3.5 h-3.5" />
           <span>Examen Blanc</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('interview')}
+          className={`flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 py-1 border-b-2 ${
+            activeTab === 'interview'
+              ? 'text-amber-400 border-amber-400 font-semibold'
+              : 'border-transparent hover:text-white hover:border-slate-600'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Entretien & Oral</span>
         </button>
 
         <button
