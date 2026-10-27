@@ -13,6 +13,7 @@ import { StudyPlanView } from './components/StudyPlanView';
 import { FormulaCheatSheet } from './components/FormulaCheatSheet';
 import { GovernorNoteGenerator } from './components/GovernorNoteGenerator';
 import { LocalGuideView } from './components/LocalGuideView';
+import { ProgressionBadge } from './components/ProgressionBadge';
 
 import { exercises } from './data/exercises';
 import { readingCurriculum } from './data/readingCurriculum';
@@ -113,20 +114,29 @@ export default function App() {
               </p>
             </div>
 
-            {/* Quick Metrics */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-800 text-center min-w-[90px]">
-                <div className="text-lg font-bold text-amber-400 font-mono tabular-nums">
-                  {completedExercisesCount}/{exercises.length}
-                </div>
-                <div className="text-[11px] text-slate-400">TP Validés</div>
-              </div>
+            {/* Quick Metrics & Progression Badge */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+              <ProgressionBadge
+                completedExercisesCount={completedExercisesCount}
+                totalExercisesCount={exercises.length}
+                completedModulesCount={completedModulesCount}
+                totalModulesCount={readingCurriculum.length}
+              />
 
-              <div className="px-4 py-3 rounded-xl bg-slate-950/80 border border-slate-800 text-center min-w-[90px]">
-                <div className="text-lg font-bold text-emerald-400 font-mono tabular-nums">
-                  {completedModulesCount}/{readingCurriculum.length}
+              <div className="flex items-center gap-2">
+                <div className="px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-center min-w-[80px]">
+                  <div className="text-base font-bold text-amber-400 font-mono tabular-nums">
+                    {completedExercisesCount}/{exercises.length}
+                  </div>
+                  <div className="text-[10px] text-slate-400">TP Validés</div>
                 </div>
-                <div className="text-[11px] text-slate-400">Fiches Lues</div>
+
+                <div className="px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-center min-w-[80px]">
+                  <div className="text-base font-bold text-emerald-400 font-mono tabular-nums">
+                    {completedModulesCount}/{readingCurriculum.length}
+                  </div>
+                  <div className="text-[10px] text-slate-400">Fiches Lues</div>
+                </div>
               </div>
             </div>
           </div>
