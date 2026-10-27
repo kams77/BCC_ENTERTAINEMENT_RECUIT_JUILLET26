@@ -19,17 +19,31 @@ import {
   History,
   Timer as TimerIcon,
   HelpCircle,
-  Building
+  Building,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import { ExamQuestion } from '../types';
 
 interface MockExamSimulatorProps {
   questions: ExamQuestion[];
+  strictMode?: boolean;
+  isUnlocked?: boolean;
+  prerequisiteMessage?: string;
+  onNavigateToPrerequisites?: () => void;
+  onExamPassed?: () => void;
 }
 
 export type ExamDurationMode = 'sprint-20' | 'standard-30' | 'deep-45' | 'free';
 
-export const MockExamSimulator: React.FC<MockExamSimulatorProps> = ({ questions }) => {
+export const MockExamSimulator: React.FC<MockExamSimulatorProps> = ({ 
+  questions,
+  strictMode = true,
+  isUnlocked = true,
+  prerequisiteMessage,
+  onNavigateToPrerequisites,
+  onExamPassed,
+}) => {
   const [examState, setExamState] = useState<'intro' | 'running' | 'completed'>('intro');
   const [selectedDurationMode, setSelectedDurationMode] = useState<ExamDurationMode>('standard-30');
   const [isPaused, setIsPaused] = useState<boolean>(false);
@@ -133,6 +147,23 @@ export const MockExamSimulator: React.FC<MockExamSimulatorProps> = ({ questions 
     }
     setIsPaused(false);
     setExamState('completed');
+
+    // Calculate pass status (>= 70%) and record
+    const totalPts = questions.reduce((acc, q) => acc + q.points, 0);
+    const earnedPts = questions.reduce((acc, q) => {
+      if (userAnswers[q.id] === q.correctIndex) {
+        return acc + q.points;
+      }
+      return acc;
+    }, 0);
+    if ((earnedPts / (totalPts || 1)) >= 0.70) {
+      try {
+        localStorage.setItem('bcc_prep_exam_passed', 'true');
+      } catch (e) {
+        // ignore
+      }
+      onExamPassed?.();
+    }
   };
 
   const formatTime = (secs: number) => {
@@ -352,14 +383,44 @@ export const MockExamSimulator: React.FC<MockExamSimulatorProps> = ({ questions 
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleStartExam}
-            className="w-full md:w-auto md:px-8 py-3.5 mx-auto text-sm font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all shadow-md shadow-amber-400/20 flex items-center justify-center gap-2"
-          >
-            <Play className="w-4 h-4 fill-current" />
-            <span>Démarrer l'Épreuve sous Chronomètre</span>
-          </button>
+          {strictMode && !isUnlocked ? (
+            <div className="p-6 rounded-2xl bg-slate-950/90 border border-amber-500/40 text-center max-w-xl mx-auto flex flex-col items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <Lock className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider block mb-1">
+                  Étape 14 · Examen d'Admissibilité Écrite
+                </span>
+                <h4 className="text-base font-bold text-white mb-1">
+                  Épreuve Finale Verrouillée
+                </h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {prerequisiteMessage || "Pour se présenter à l'épreuve écrite d'admission dans des conditions réelles, vous devez d'abord valider les modules théoriques et exercices techniques préalables."}
+                </p>
+              </div>
+
+              {onNavigateToPrerequisites && (
+                <button
+                  type="button"
+                  onClick={onNavigateToPrerequisites}
+                  className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-colors shadow-md"
+                >
+                  <span>Consulter le Parcours Séquentiel</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStartExam}
+              className="w-full md:w-auto md:px-8 py-3.5 mx-auto text-sm font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all shadow-md shadow-amber-400/20 flex items-center justify-center gap-2"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>Démarrer l'Épreuve sous Chronomètre</span>
+            </button>
+          )}
         </div>
       )}
 

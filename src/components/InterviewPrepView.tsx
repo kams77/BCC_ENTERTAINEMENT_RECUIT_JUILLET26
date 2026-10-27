@@ -18,11 +18,23 @@ import {
   Eye,
   EyeOff,
   Flame,
-  MessageSquare
+  MessageSquare,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import { interviewQuestions, oralExamMethodology, InterviewQuestion } from '../data/interviewQuestions';
 
-export const InterviewPrepView: React.FC = () => {
+interface InterviewPrepViewProps {
+  strictMode?: boolean;
+  isUnlocked?: boolean;
+  onNavigateToRoadmap?: () => void;
+}
+
+export const InterviewPrepView: React.FC<InterviewPrepViewProps> = ({
+  strictMode = true,
+  isUnlocked = true,
+  onNavigateToRoadmap,
+}) => {
   const [activeSubTab, setActiveSubTab] = useState<'simulator' | 'bank' | 'methodology'>('simulator');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -130,20 +142,76 @@ export const InterviewPrepView: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 self-start text-xs font-medium">
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('simulator')}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-colors ${
-            activeSubTab === 'simulator'
-              ? 'bg-amber-400 text-slate-950 font-bold shadow-sm'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Play className="w-3.5 h-3.5 fill-current" />
-          <span>Simulateur de Jury en Direct</span>
-        </button>
+      {/* Navigation Sub-Tabs or Locked Gate */}
+      {strictMode && !isUnlocked ? (
+        <div className="p-8 rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/40 flex flex-col items-center text-center gap-5 shadow-xl my-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="max-w-xl space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              Priorité Pédagogique BCC · Étape 15 (Ultime)
+            </div>
+            <h3 className="text-xl font-bold text-white tracking-tight">
+              Grand Oral d'Admission Verrouillé
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Conformément à la procédure de recrutement de la Banque Centrale du Congo, le Grand Oral devant le jury de directeurs centraux est réservé aux candidats admissibles ayant réussi l'épreuve écrite d'Examen Blanc (score minimal requis de 70%).
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 text-left w-full max-w-lg space-y-3">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              Prérequis Indispensable :
+            </span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg bg-slate-900/70 border border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <Award className="w-5 h-5 text-amber-400 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold text-white block">
+                    Épreuve Écrite : Examen Blanc Chronométré (Étape 14)
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Valider le score seuil de 70% pour décrocher l'admissibilité
+                  </span>
+                </div>
+              </div>
+              <span className="text-amber-400 font-mono text-xs font-bold shrink-0">
+                Non validé
+              </span>
+            </div>
+          </div>
+
+          {onNavigateToRoadmap && (
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onNavigateToRoadmap}
+                className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-colors shadow-md"
+              >
+                <span>Accéder aux Épreuves Préalables</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Navigation Sub-Tabs */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 self-start text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('simulator')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-colors ${
+                activeSubTab === 'simulator'
+                  ? 'bg-amber-400 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Simulateur de Jury en Direct</span>
+            </button>
 
         <button
           type="button"
@@ -523,6 +591,8 @@ export const InterviewPrepView: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
-  );
+    </>
+  )}
+</div>
+);
 };

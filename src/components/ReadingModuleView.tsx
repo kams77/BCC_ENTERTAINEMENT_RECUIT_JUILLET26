@@ -10,24 +10,37 @@ import {
   ArrowRight, 
   ChevronRight,
   Sparkles,
-  RotateCcw
+  RotateCcw,
+  Lock
 } from 'lucide-react';
 import { ReadingModule } from '../types';
 
 interface ReadingModuleViewProps {
   modules: ReadingModule[];
   completedModules: Record<string, boolean>;
+  strictMode?: boolean;
   onToggleCompleteModule: (moduleId: string) => void;
+  onNavigateToExercise?: (exerciseId: string) => void;
+  initialModuleId?: string;
 }
 
 export const ReadingModuleView: React.FC<ReadingModuleViewProps> = ({
   modules,
   completedModules,
+  strictMode = true,
   onToggleCompleteModule,
+  onNavigateToExercise,
+  initialModuleId,
 }) => {
-  const [selectedModuleId, setSelectedModuleId] = useState<string>(modules[0].id);
+  const [selectedModuleId, setSelectedModuleId] = useState<string>(initialModuleId || modules[0].id);
   const [userQuizAnswers, setUserQuizAnswers] = useState<Record<string, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState<Record<string, boolean>>({});
+
+  React.useEffect(() => {
+    if (initialModuleId) {
+      setSelectedModuleId(initialModuleId);
+    }
+  }, [initialModuleId]);
 
   const currentModule = modules.find((m) => m.id === selectedModuleId) || modules[0];
   const isCompleted = !!completedModules[currentModule.id];
@@ -44,6 +57,9 @@ export const ReadingModuleView: React.FC<ReadingModuleViewProps> = ({
       ...prev,
       [currentModule.id]: true,
     }));
+    if (!completedModules[currentModule.id]) {
+      onToggleCompleteModule(currentModule.id);
+    }
   };
 
   const handleResetQuiz = () => {
@@ -67,6 +83,10 @@ export const ReadingModuleView: React.FC<ReadingModuleViewProps> = ({
     });
   }
 
+  const currentModIndex = modules.findIndex((m) => m.id === currentModule.id);
+  const prevMod = currentModIndex > 0 ? modules[currentModIndex - 1] : null;
+  const isCurrentModuleLocked = strictMode && currentModIndex > 0 && prevMod && !completedModules[prevMod.id];
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-80px)]">
       {/* Module Index Sidebar (4 cols) */}
@@ -82,9 +102,11 @@ export const ReadingModuleView: React.FC<ReadingModuleViewProps> = ({
         </div>
 
         <div className="flex flex-col gap-2 max-h-[750px] overflow-y-auto pr-1">
-          {modules.map((mod) => {
+          {modules.map((mod, index) => {
             const isSelected = mod.id === selectedModuleId;
             const completed = !!completedModules[mod.id];
+            const pMod = index > 0 ? modules[index - 1] : null;
+            const isLocked = strictMode && index > 0 && pMod && !completedModules[pMod.id];
 
             return (
               <button
@@ -93,21 +115,30 @@ export const ReadingModuleView: React.FC<ReadingModuleViewProps> = ({
                 className={`text-left p-3.5 rounded-xl border transition-all ${
                   isSelected
                     ? 'bg-slate-800/90 border-amber-500/60 shadow-md ring-1 ring-amber-500/30'
+                    : isLocked
+                    ? 'bg-slate-950/40 border-slate-900 opacity-60 hover:opacity-90'
                     : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/40 hover:border-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span className="text-xs font-mono font-bold text-amber-400">
                       Module {mod.moduleNumber}
                     </span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                      mod.priority === 'Priorité Absolue'
-                        ? 'bg-red-950/60 text-red-300 border border-red-800/50'
-                        : 'bg-amber-950/60 text-amber-300 border border-amber-800/50'
-                    }`}>
-                      {mod.priority}
-                    </span>
+                    {isLocked ? (
+                      <span className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" />
+                        <span>Mod. {pMod?.moduleNumber} req.</span>
+                      </span>
+                    ) : (
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                        mod.priority === 'Priorité Absolue'
+                          ? 'bg-red-950/60 text-red-300 border border-red-800/50'
+                          : 'bg-amber-950/60 text-amber-300 border border-amber-800/50'
+                      }`}>
+                        {mod.priority}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 text-xs text-slate-400">
                     <Clock className="w-3 h-3" />
@@ -128,6 +159,8 @@ export const ReadingModuleView: React.FC<ReadingModuleViewProps> = ({
                   </span>
                   {completed ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : isLocked ? (
+                    <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   ) : (
                     <div className="w-4 h-4 rounded-full border border-slate-600 shrink-0" />
                   )}
@@ -151,17 +184,24 @@ export const ReadingModuleView: React.FC<ReadingModuleViewProps> = ({
               <span className="tabular-nums">Lecture : {currentModule.estimatedReadingTime}</span>
             </div>
 
-            <button
-              onClick={() => onToggleCompleteModule(currentModule.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                isCompleted
-                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/50'
-                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
-              }`}
-            >
-              <CheckCircle2 className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-400' : 'text-slate-400'}`} />
-              <span>{isCompleted ? 'Fiche Validée' : 'Marquer comme Lu'}</span>
-            </button>
+            {isCurrentModuleLocked ? (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 border border-slate-800 text-slate-500">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Prérequis Requis</span>
+              </span>
+            ) : (
+              <button
+                onClick={() => onToggleCompleteModule(currentModule.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  isCompleted
+                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/50'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <CheckCircle2 className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-400' : 'text-slate-400'}`} />
+                <span>{isCompleted ? 'Fiche Validée' : 'Marquer comme Lu'}</span>
+              </button>
+            )}
           </div>
 
           <div>
@@ -203,6 +243,65 @@ export const ReadingModuleView: React.FC<ReadingModuleViewProps> = ({
             ))}
           </div>
         </div>
+
+        {isCurrentModuleLocked ? (
+          /* Locked State Gate */
+          <div className="p-8 rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/40 flex flex-col items-center text-center gap-5 shadow-xl my-2">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
+              <Lock className="w-8 h-8" />
+            </div>
+
+            <div className="max-w-xl space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-xs font-semibold text-amber-400 uppercase tracking-wider">
+                Progression Linéaire BCC · Module {prevMod?.moduleNumber} requis
+              </div>
+              <h3 className="text-xl font-bold text-white tracking-tight">
+                Module Théorique Verrouillé
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Selon le règlement du concours et les priorités de la BCC, chaque domaine d'expertise repose sur la maîtrise des fondamentaux précédents. Vous devez valider le module prérequis et son QCM avant d'aborder celui-ci.
+              </p>
+            </div>
+
+            {prevMod && (
+              <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 text-left w-full max-w-lg space-y-3">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                  Module Préalable Obligatoire :
+                </span>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg bg-slate-900/70 border border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <BookOpen className="w-5 h-5 text-amber-400 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-white block">
+                        Module {prevMod.moduleNumber} : {prevMod.title}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        {prevMod.category} · QCM et points clés à valider
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-amber-400 font-mono text-xs font-bold shrink-0">
+                    Non validé
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              {prevMod && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedModuleId(prevMod.id)}
+                  className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-colors shadow-md"
+                >
+                  <span>Étudier le Module {prevMod.moduleNumber}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
 
         {/* In-Depth Sections */}
         <div className="space-y-6">
@@ -338,7 +437,9 @@ export const ReadingModuleView: React.FC<ReadingModuleViewProps> = ({
             )}
           </div>
         )}
-      </div>
+        </>
+      )}
     </div>
-  );
+  </div>
+);
 };

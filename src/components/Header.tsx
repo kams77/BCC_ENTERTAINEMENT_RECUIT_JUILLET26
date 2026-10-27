@@ -9,10 +9,12 @@ import {
   Laptop, 
   Calculator, 
   FileText,
-  Users 
+  Users,
+  ShieldCheck
 } from 'lucide-react';
 
 export type NavigationTab = 
+  | 'roadmap'
   | 'exercises' 
   | 'reading' 
   | 'formulas'
@@ -58,6 +60,18 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Zone 2: Navigation Links */}
       <nav className="hidden xl:flex items-center gap-5 text-xs font-medium text-slate-300">
+        <button
+          onClick={() => setActiveTab('roadmap')}
+          className={`flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 py-1 border-b-2 ${
+            activeTab === 'roadmap'
+              ? 'text-amber-400 border-amber-400 font-semibold'
+              : 'border-transparent hover:text-white hover:border-slate-600'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+          <span>Parcours Séquentiel</span>
+        </button>
+
         <button
           onClick={() => setActiveTab('exercises')}
           className={`flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 py-1 border-b-2 ${

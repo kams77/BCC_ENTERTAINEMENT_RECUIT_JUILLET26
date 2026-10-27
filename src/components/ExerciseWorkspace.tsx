@@ -13,22 +13,41 @@ import {
   Building2,
   HelpCircle,
   Copy,
-  Check
+  Check,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import { Exercise } from '../types';
+
+export const EXERCISE_PREREQUISITES: Record<string, { moduleId: string; moduleTitle: string; stepNumber: number }> = {
+  'exo-1-cleaning-multidevise': { moduleId: 'module-1-institutions-bcc', moduleTitle: 'Module 01 : Cadre Institutionnel, Missions & Statuts', stepNumber: 1 },
+  'exo-5-adjudication-bons-bcc': { moduleId: 'module-2-politique-monetaire', moduleTitle: 'Module 02 : Politique Monétaire & Bons BCC', stepNumber: 3 },
+  'exo-2-ratios-npl-dsif': { moduleId: 'module-3-surveillance-prudentielle', moduleTitle: 'Module 03 : Surveillance Prudentielle & Bâle II/III', stepNumber: 5 },
+  'exo-3-volatilite-taux-change': { moduleId: 'module-4-macroeconomie-condense', moduleTitle: 'Module 04 : Macroéconomie & Condensé BCC', stepNumber: 7 },
+  'exo-4-agregats-monetaires-m2': { moduleId: 'module-4-macroeconomie-condense', moduleTitle: 'Module 04 : Macroéconomie & Condensé BCC', stepNumber: 7 },
+  'exo-6-stress-test-choc-minier': { moduleId: 'module-5-boite-a-outils-data-analyst', moduleTitle: 'Module 05 : Boîte à Outils SQL & Économétrie', stepNumber: 10 },
+};
 
 interface ExerciseWorkspaceProps {
   exercises: Exercise[];
   completedExercises: Record<string, boolean>;
+  completedModules: Record<string, boolean>;
+  strictMode: boolean;
   onToggleComplete: (exerciseId: string) => void;
+  onNavigateToModule?: (moduleId: string) => void;
+  initialExerciseId?: string;
 }
 
 export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
   exercises,
   completedExercises,
+  completedModules,
+  strictMode,
   onToggleComplete,
+  onNavigateToModule,
+  initialExerciseId,
 }) => {
-  const [selectedExoId, setSelectedExoId] = useState<string>(exercises[0].id);
+  const [selectedExoId, setSelectedExoId] = useState<string>(initialExerciseId || exercises[0].id);
   const [language, setLanguage] = useState<'sql' | 'python'>('sql');
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'editor' | 'data' | 'solution'>('editor');
   
@@ -50,6 +69,14 @@ export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
 
   const [revealedHints, setRevealedHints] = useState<number>(0);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (initialExerciseId) {
+      setSelectedExoId(initialExerciseId);
+      setExecutionResult({ status: 'idle', message: '' });
+      setRevealedHints(0);
+    }
+  }, [initialExerciseId]);
 
   const currentExercise = exercises.find((ex) => ex.id === selectedExoId) || exercises[0];
   const codeKey = `${currentExercise.id}_${language}`;
@@ -152,6 +179,8 @@ export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
   };
 
   const isCompleted = !!completedExercises[currentExercise.id];
+  const currentPrereq = EXERCISE_PREREQUISITES[currentExercise.id];
+  const isCurrentExoLocked = strictMode && currentPrereq && !completedModules[currentPrereq.moduleId];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-80px)]">
@@ -171,6 +200,8 @@ export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
           {exercises.map((exo, index) => {
             const isSelected = exo.id === selectedExoId;
             const completed = !!completedExercises[exo.id];
+            const prereq = EXERCISE_PREREQUISITES[exo.id];
+            const isLocked = strictMode && prereq && !completedModules[prereq.moduleId];
 
             return (
               <button
@@ -183,13 +214,23 @@ export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
                 className={`text-left p-3.5 rounded-xl border transition-all ${
                   isSelected
                     ? 'bg-slate-800/90 border-amber-500/60 shadow-md ring-1 ring-amber-500/30'
+                    : isLocked
+                    ? 'bg-slate-950/40 border-slate-900 opacity-60 hover:opacity-90'
                     : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/40 hover:border-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className="text-xs font-semibold text-amber-400">
-                    Exercice {index + 1}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-amber-400">
+                      Exercice {index + 1}
+                    </span>
+                    {isLocked && (
+                      <span className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" />
+                        <span>Étape {prereq.stepNumber}</span>
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-xs text-slate-400">
                     <Clock className="w-3 h-3" />
                     <span>{exo.estimatedTimeMin} min</span>
@@ -211,6 +252,8 @@ export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
                     </span>
                     {completed ? (
                       <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : isLocked ? (
+                      <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     ) : (
                       <div className="w-4 h-4 rounded-full border border-slate-600 shrink-0" />
                     )}
@@ -247,17 +290,24 @@ export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => onToggleComplete(currentExercise.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                  isCompleted
-                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/50'
-                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                <CheckCircle className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-400' : 'text-slate-400'}`} />
-                <span>{isCompleted ? 'Marqué comme Réussi' : 'Marquer comme Traité'}</span>
-              </button>
+              {isCurrentExoLocked ? (
+                <span className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 border border-slate-800 text-slate-500">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Prérequis Requis</span>
+                </span>
+              ) : (
+                <button
+                  onClick={() => onToggleComplete(currentExercise.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                    isCompleted
+                      ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/50'
+                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
+                  }`}
+                >
+                  <CheckCircle className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-400' : 'text-slate-400'}`} />
+                  <span>{isCompleted ? 'Marqué comme Réussi' : 'Marquer comme Traité'}</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -280,7 +330,63 @@ export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
           </div>
         </div>
 
-        {/* Workspace Action Toolbar */}
+        {isCurrentExoLocked ? (
+          /* Locked State Gate */
+          <div className="p-8 rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/40 flex flex-col items-center text-center gap-5 shadow-xl my-2">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
+              <Lock className="w-8 h-8" />
+            </div>
+
+            <div className="max-w-xl space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-xs font-semibold text-amber-400 uppercase tracking-wider">
+                Priorité Pédagogique BCC · Étape {currentPrereq.stepNumber} requise
+              </div>
+              <h3 className="text-xl font-bold text-white tracking-tight">
+                Exercice Verrouillé par le Parcours Séquentiel
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Conformément à la règle de progression stricte de la BCC, chaque exercice technique s'appuie sur un socle réglementaire et conceptuel préalable. Vous devez d'abord valider le module théorique correspondant.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 text-left w-full max-w-lg space-y-3">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                Module Théorique Prérequis Indispensable :
+              </span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg bg-slate-900/70 border border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <BookMarked className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <span className="text-xs font-bold text-white block">
+                      {currentPrereq.moduleTitle}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Fiche légale & questionnaire QCM d'assimilation
+                    </span>
+                  </div>
+                </div>
+                <span className="text-amber-400 font-mono text-xs font-bold shrink-0">
+                  À valider
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              {onNavigateToModule && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateToModule(currentPrereq.moduleId)}
+                  className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-colors shadow-md"
+                >
+                  <span>Étudier le Module Prérequis</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Workspace Action Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-2 bg-slate-900/90 rounded-xl border border-slate-800">
           {/* Segmented Controls for Tabs */}
           <div className="flex items-center gap-1 p-1 bg-slate-950 rounded-lg">
@@ -551,7 +657,9 @@ export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
+      </>
+    )}
+  </div>
+</div>
+);
 };

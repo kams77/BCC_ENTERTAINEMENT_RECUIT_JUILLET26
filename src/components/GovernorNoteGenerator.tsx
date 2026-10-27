@@ -1,7 +1,29 @@
 import React, { useState } from 'react';
-import { FileText, Sliders, Sparkles, Copy, Check, Download, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { 
+  FileText, 
+  Sliders, 
+  Sparkles, 
+  Copy, 
+  Check, 
+  Download, 
+  AlertTriangle, 
+  ShieldCheck,
+  Lock,
+  ArrowRight,
+  BookOpen
+} from 'lucide-react';
 
-export const GovernorNoteGenerator: React.FC = () => {
+interface GovernorNoteGeneratorProps {
+  strictMode?: boolean;
+  isUnlocked?: boolean;
+  onNavigateToRoadmap?: () => void;
+}
+
+export const GovernorNoteGenerator: React.FC<GovernorNoteGeneratorProps> = ({
+  strictMode = true,
+  isUnlocked = true,
+  onNavigateToRoadmap,
+}) => {
   const [tauxIndicatif, setTauxIndicatif] = useState<number>(2912);
   const [spreadParallele, setSpreadParallele] = useState<number>(3.4);
   const [reservesUsd, setReservesUsd] = useState<number>(5530);
@@ -82,7 +104,61 @@ Le Data Analyst Conjoncturel`;
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {strictMode && !isUnlocked ? (
+        <div className="p-8 rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/40 flex flex-col items-center text-center gap-5 shadow-xl my-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="max-w-xl space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              Priorité Pédagogique BCC · Étape 13 (Phase 6)
+            </div>
+            <h3 className="text-xl font-bold text-white tracking-tight">
+              Rédaction Stratégique Verrouillée
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              La rédaction de la Note au Gouverneur et au Comité de Politique Monétaire (CPM) exige la maîtrise préalable du cadre méthodologique de direction (Module 06).
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 text-left w-full max-w-lg space-y-3">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              Prérequis Indispensable :
+            </span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg bg-slate-900/70 border border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <BookOpen className="w-5 h-5 text-amber-400 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold text-white block">
+                    Module 06 : Méthodologie du Concours & Posture
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Techniques de synthèse exécutive pour la haute direction BCC
+                  </span>
+                </div>
+              </div>
+              <span className="text-amber-400 font-mono text-xs font-bold shrink-0">
+                Non validé
+              </span>
+            </div>
+          </div>
+
+          {onNavigateToRoadmap && (
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onNavigateToRoadmap}
+                className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-colors shadow-md"
+              >
+                <span>Accéder au Parcours Séquentiel</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Sliders Panel (4 cols) */}
         <div className="lg:col-span-5 p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-5">
           <h2 className="text-sm font-bold text-white flex items-center gap-2">
@@ -206,6 +282,7 @@ Le Data Analyst Conjoncturel`;
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };
