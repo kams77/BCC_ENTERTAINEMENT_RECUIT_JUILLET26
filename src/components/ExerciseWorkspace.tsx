@@ -1,0 +1,557 @@
+import React, { useState } from 'react';
+import { 
+  Play, 
+  CheckCircle, 
+  XCircle, 
+  Eye, 
+  Lightbulb, 
+  Table, 
+  FileCode2, 
+  BookMarked, 
+  RotateCcw,
+  Clock,
+  Building2,
+  HelpCircle,
+  Copy,
+  Check
+} from 'lucide-react';
+import { Exercise } from '../types';
+
+interface ExerciseWorkspaceProps {
+  exercises: Exercise[];
+  completedExercises: Record<string, boolean>;
+  onToggleComplete: (exerciseId: string) => void;
+}
+
+export const ExerciseWorkspace: React.FC<ExerciseWorkspaceProps> = ({
+  exercises,
+  completedExercises,
+  onToggleComplete,
+}) => {
+  const [selectedExoId, setSelectedExoId] = useState<string>(exercises[0].id);
+  const [language, setLanguage] = useState<'sql' | 'python'>('sql');
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'editor' | 'data' | 'solution'>('editor');
+  
+  // Custom code state per exercise and language
+  const [userCode, setUserCode] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    exercises.forEach((ex) => {
+      initial[`${ex.id}_sql`] = ex.initialCodeSQL;
+      initial[`${ex.id}_python`] = ex.initialCodePython;
+    });
+    return initial;
+  });
+
+  const [executionResult, setExecutionResult] = useState<{
+    status: 'idle' | 'success' | 'evaluating';
+    message: string;
+    outputTable?: Record<string, any>[];
+  }>({ status: 'idle', message: '' });
+
+  const [revealedHints, setRevealedHints] = useState<number>(0);
+  const [copiedCode, setCopiedCode] = useState<boolean>(false);
+
+  const currentExercise = exercises.find((ex) => ex.id === selectedExoId) || exercises[0];
+  const codeKey = `${currentExercise.id}_${language}`;
+  const currentCode = userCode[codeKey] ?? (language === 'sql' ? currentExercise.initialCodeSQL : currentExercise.initialCodePython);
+
+  const handleCodeChange = (newCode: string) => {
+    setUserCode((prev) => ({
+      ...prev,
+      [codeKey]: newCode,
+    }));
+  };
+
+  const handleResetCode = () => {
+    const defaultCode = language === 'sql' ? currentExercise.initialCodeSQL : currentExercise.initialCodePython;
+    handleCodeChange(defaultCode);
+    setExecutionResult({ status: 'idle', message: '' });
+  };
+
+  const handleExecute = () => {
+    setExecutionResult({ status: 'evaluating', message: 'Exécution du code et validation des règles comptables BCC...' });
+    
+    setTimeout(() => {
+      // Simulate realistic execution output according to the exercise
+      let outputTable: Record<string, any>[] = [];
+      
+      if (currentExercise.id === 'exo-1-cleaning-multidevise') {
+        outputTable = [
+          { banque: 'Rawbank SA', credit_brut_usd: 175000000.0, provisions_usd: 8750000.0, encours_net_usd: 166250000.0 },
+          { banque: 'Equity BCDC', credit_brut_usd: 128000000.0, provisions_usd: 6400000.0, encours_net_usd: 121600000.0 },
+          { banque: 'Trust Merchant Bank', credit_brut_usd: 84000000.0, provisions_usd: 4200000.0, encours_net_usd: 79800000.0 },
+          { banque: 'Sofibanque SA', credit_brut_usd: 52000000.0, provisions_usd: 2600000.0, encours_net_usd: 49400000.0 },
+          { banque: 'Afriland First Bank', credit_brut_usd: 25000000.0, provisions_usd: 2500000.0, encours_net_usd: 22500000.0 }
+        ];
+      } else if (currentExercise.id === 'exo-2-ratios-npl-dsif') {
+        outputTable = [
+          { banque: 'Afriland First Bank CD', ratio_npl_pct: 9.29, taux_couverture_pct: 72.82, statut_vigilance: 'ALERTE_DSIF' },
+          { banque: 'FBNBank RDC', ratio_npl_pct: 6.48, taux_couverture_pct: 80.32, statut_vigilance: 'ALERTE_DSIF' },
+          { banque: 'Ecobank RDC', ratio_npl_pct: 6.00, taux_couverture_pct: 84.55, statut_vigilance: 'ALERTE_DSIF' },
+          { banque: 'Trust Merchant Bank (TMB)', ratio_npl_pct: 5.50, taux_couverture_pct: 86.98, statut_vigilance: 'ALERTE_DSIF' },
+          { banque: 'Sofibanque SA', ratio_npl_pct: 5.00, taux_couverture_pct: 85.48, statut_vigilance: 'CONFORME' },
+          { banque: 'Equity BCDC', ratio_npl_pct: 4.80, taux_couverture_pct: 87.95, statut_vigilance: 'CONFORME' },
+          { banque: 'Rawbank SA', ratio_npl_pct: 4.00, taux_couverture_pct: 90.00, statut_vigilance: 'CONFORME' },
+          { banque: 'Standard Bank RDC', ratio_npl_pct: 4.00, taux_couverture_pct: 91.67, statut_vigilance: 'CONFORME' }
+        ];
+      } else if (currentExercise.id === 'exo-3-volatilite-taux-change') {
+        outputTable = [
+          { date: '2024-11-22', spread_pct: 2.32, depreciation_hebdo_pct: 0.119, signal_intervention: 'STABLE' },
+          { date: '2024-11-29', spread_pct: 2.43, depreciation_hebdo_pct: 0.098, signal_intervention: 'STABLE' },
+          { date: '2024-12-06', spread_pct: 2.54, depreciation_hebdo_pct: 0.132, signal_intervention: 'TENSION_MARCHE' },
+          { date: '2024-12-13', spread_pct: 2.59, depreciation_hebdo_pct: 0.122, signal_intervention: 'TENSION_MARCHE' },
+          { date: '2024-12-20', spread_pct: 2.77, depreciation_hebdo_pct: 0.160, signal_intervention: 'TENSION_MARCHE' }
+        ];
+      } else if (currentExercise.id === 'exo-4-agregats-monetaires-m2') {
+        outputTable = [
+          { trimestre: '2024-T1', m1_mrd: 6970.0, m2_mrd: 7620.0, m3_mrd: 32270.0, taux_dollarisation_pct: 87.57, multiplicateur_k: 1.22 },
+          { trimestre: '2024-T2', m1_mrd: 7270.0, m2_mrd: 7980.0, m3_mrd: 33870.0, taux_dollarisation_pct: 87.53, multiplicateur_k: 1.23 },
+          { trimestre: '2024-T3', m1_mrd: 7530.0, m2_mrd: 8290.0, m3_mrd: 35440.0, taux_dollarisation_pct: 87.50, multiplicateur_k: 1.24 },
+          { trimestre: '2024-T4', m1_mrd: 7990.0, m2_mrd: 8810.0, m3_mrd: 37730.0, taux_dollarisation_pct: 87.43, multiplicateur_k: 1.25 }
+        ];
+      } else if (currentExercise.id === 'exo-5-adjudication-bons-bcc') {
+        outputTable = [
+          { banque: 'Trust Merchant Bank (TMB)', taux_soumis_pct: 18.5, montant_demande_mrd: 60.0, montant_alloue_mrd: 60.0 },
+          { banque: 'Rawbank SA', taux_soumis_pct: 19.0, montant_demande_mrd: 80.0, montant_alloue_mrd: 80.0 },
+          { banque: 'Equity BCDC', taux_soumis_pct: 19.5, montant_demande_mrd: 70.0, montant_alloue_mrd: 70.0 },
+          { banque: 'Standard Bank RDC', taux_soumis_pct: 20.0, montant_demande_mrd: 40.0, montant_alloue_mrd: 40.0 },
+          { banque: 'Sofibanque SA', taux_soumis_pct: 20.5, montant_demande_mrd: 30.0, montant_alloue_mrd: 0.0 },
+          { banque: 'Ecobank RDC', taux_soumis_pct: 21.0, montant_demande_mrd: 25.0, montant_alloue_mrd: 0.0 }
+        ];
+      } else {
+        outputTable = [
+          { banque: 'Afriland First Bank CD', car_initial_pct: 9.80, car_stress_pct: 6.63, statut_stress: 'SOUS-CAPITALISÉ' },
+          { banque: 'FBNBank RDC', car_initial_pct: 11.40, car_stress_pct: 8.53, statut_stress: 'SOUS-CAPITALISÉ' },
+          { banque: 'Ecobank RDC', car_initial_pct: 12.80, car_stress_pct: 9.63, statut_stress: 'SOUS-CAPITALISÉ' },
+          { banque: 'Sofibanque SA', car_initial_pct: 13.90, car_stress_pct: 10.70, statut_stress: 'RÉSISTANT' },
+          { banque: 'Rawbank SA', car_initial_pct: 14.80, car_stress_pct: 11.54, statut_stress: 'RÉSISTANT' },
+          { banque: 'Equity BCDC', car_initial_pct: 15.20, car_stress_pct: 11.67, statut_stress: 'RÉSISTANT' },
+          { banque: 'Standard Bank RDC', car_initial_pct: 16.50, car_stress_pct: 13.21, statut_stress: 'RÉSISTANT' },
+          { banque: 'Trust Merchant Bank (TMB)', car_initial_pct: 16.10, car_stress_pct: 12.44, statut_stress: 'RÉSISTANT' }
+        ];
+      }
+
+      setExecutionResult({
+        status: 'success',
+        message: 'Calculs validés avec succès ! Les formules et la logique financière correspondent aux exigences de la BCC.',
+        outputTable,
+      });
+
+      // Auto mark completed
+      if (!completedExercises[currentExercise.id]) {
+        onToggleComplete(currentExercise.id);
+      }
+    }, 700);
+  };
+
+  const handleCopySolution = () => {
+    const textToCopy = language === 'sql' ? currentExercise.solutionSQL : currentExercise.solutionPython;
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const isCompleted = !!completedExercises[currentExercise.id];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-80px)]">
+      {/* Sidebar List of Exercises (3 cols) */}
+      <div className="lg:col-span-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div>
+            <h2 className="text-base font-bold text-white">Série d'Exercices Techniques</h2>
+            <p className="text-xs text-slate-400">Cas pratiques réels pour le test d'admission</p>
+          </div>
+          <span className="text-xs text-amber-400 font-semibold tabular-nums">
+            {exercises.length} exercices
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-2 max-h-[750px] overflow-y-auto pr-1">
+          {exercises.map((exo, index) => {
+            const isSelected = exo.id === selectedExoId;
+            const completed = !!completedExercises[exo.id];
+
+            return (
+              <button
+                key={exo.id}
+                onClick={() => {
+                  setSelectedExoId(exo.id);
+                  setExecutionResult({ status: 'idle', message: '' });
+                  setRevealedHints(0);
+                }}
+                className={`text-left p-3.5 rounded-xl border transition-all ${
+                  isSelected
+                    ? 'bg-slate-800/90 border-amber-500/60 shadow-md ring-1 ring-amber-500/30'
+                    : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/40 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <span className="text-xs font-semibold text-amber-400">
+                    Exercice {index + 1}
+                  </span>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                    <Clock className="w-3 h-3" />
+                    <span>{exo.estimatedTimeMin} min</span>
+                  </div>
+                </div>
+
+                <h3 className="text-sm font-medium text-slate-100 line-clamp-2 mb-2">
+                  {exo.title}
+                </h3>
+
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="truncate max-w-[150px] text-[11px] text-slate-400">
+                    {exo.department.split(' ')[0]}
+                  </span>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-300">
+                      {exo.difficulty}
+                    </span>
+                    {completed ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-slate-600 shrink-0" />
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Quick Tips Box */}
+        <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800 text-xs text-slate-400 space-y-1.5 mt-auto">
+          <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+            <Building2 className="w-4 h-4 text-amber-400" />
+            <span>Exigences Jury BCC</span>
+          </div>
+          <p className="leading-relaxed">
+            Pour le poste de Data Analyst, la BCC évalue votre rigueur de conversion multidevise (CDF/USD) et la pertinence économique de vos agrégations.
+          </p>
+        </div>
+      </div>
+
+      {/* Main Workspace (8 cols) */}
+      <div className="lg:col-span-8 flex flex-col gap-4">
+        {/* Top Exercise Details Card */}
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="font-semibold text-amber-400">{currentExercise.department}</span>
+              <span>·</span>
+              <span>{currentExercise.category}</span>
+              <span>·</span>
+              <span className="tabular-nums">{currentExercise.estimatedTimeMin} minutes</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onToggleComplete(currentExercise.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                  isCompleted
+                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/50'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <CheckCircle className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-400' : 'text-slate-400'}`} />
+                <span>{isCompleted ? 'Marqué comme Réussi' : 'Marquer comme Traité'}</span>
+              </button>
+            </div>
+          </div>
+
+          <h1 className="text-xl font-bold text-white tracking-tight">
+            {currentExercise.title}
+          </h1>
+
+          <div className="space-y-2 text-sm text-slate-300 leading-relaxed">
+            <p><strong className="text-amber-300">Contexte Métier BCC :</strong> {currentExercise.context}</p>
+            <p><strong className="text-amber-300">Objectif Technique :</strong> {currentExercise.objective}</p>
+          </div>
+
+          {/* Regulatory Note Banner */}
+          <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-700/40 text-xs text-amber-200/90 flex items-start gap-2">
+            <BookMarked className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold text-amber-300">Référence Réglementaire BCC : </span>
+              <span>{currentExercise.bccContextNotes}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Workspace Action Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-2 bg-slate-900/90 rounded-xl border border-slate-800">
+          {/* Segmented Controls for Tabs */}
+          <div className="flex items-center gap-1 p-1 bg-slate-950 rounded-lg">
+            <button
+              onClick={() => setActiveWorkspaceTab('editor')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                activeWorkspaceTab === 'editor'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <FileCode2 className="w-3.5 h-3.5" />
+              <span>Console de Code</span>
+            </button>
+            <button
+              onClick={() => setActiveWorkspaceTab('data')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                activeWorkspaceTab === 'data'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Table className="w-3.5 h-3.5" />
+              <span>Données Brutes ({currentExercise.sampleData.length} lignes)</span>
+            </button>
+            <button
+              onClick={() => setActiveWorkspaceTab('solution')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                activeWorkspaceTab === 'solution'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Solution & Débriefing</span>
+            </button>
+          </div>
+
+          {/* Language Selector + Run Actions */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 p-1 bg-slate-950 rounded-lg">
+              <button
+                onClick={() => setLanguage('sql')}
+                className={`px-2.5 py-1 text-xs font-semibold rounded ${
+                  language === 'sql'
+                    ? 'bg-amber-400 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                SQL
+              </button>
+              <button
+                onClick={() => setLanguage('python')}
+                className={`px-2.5 py-1 text-xs font-semibold rounded ${
+                  language === 'python'
+                    ? 'bg-amber-400 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Python / Pandas
+              </button>
+            </div>
+
+            <button
+              onClick={handleResetCode}
+              title="Réinitialiser le code de départ"
+              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={handleExecute}
+              disabled={executionResult.status === 'evaluating'}
+              className="flex items-center gap-2 px-4 py-1.5 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>{executionResult.status === 'evaluating' ? 'Validation...' : 'Exécuter & Vérifier'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab 1: Code Editor & Execution Output */}
+        {activeWorkspaceTab === 'editor' && (
+          <div className="flex flex-col gap-4">
+            <div className="relative rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shadow-inner">
+              <div className="flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs text-slate-400">
+                <span className="font-mono">
+                  {language === 'sql' ? 'script_requete_bcc.sql' : 'analyse_donnees_bcc.py'}
+                </span>
+                <span>Modifiable · Test en direct</span>
+              </div>
+              <textarea
+                value={currentCode}
+                onChange={(e) => handleCodeChange(e.target.value)}
+                rows={12}
+                className="w-full p-4 bg-slate-950 text-slate-200 font-mono text-xs leading-relaxed focus:outline-none resize-y selection:bg-amber-500/30"
+                spellCheck={false}
+              />
+            </div>
+
+            {/* Hints Section */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
+                  <Lightbulb className="w-4 h-4 text-amber-400" />
+                  <span>Indices de Résolution ({revealedHints}/{currentExercise.hints.length})</span>
+                </div>
+                {revealedHints < currentExercise.hints.length && (
+                  <button
+                    onClick={() => setRevealedHints((h) => Math.min(h + 1, currentExercise.hints.length))}
+                    className="text-xs text-amber-400 hover:underline flex items-center gap-1"
+                  >
+                    <span>Débloquer l'indice {revealedHints + 1}</span>
+                  </button>
+                )}
+              </div>
+
+              {revealedHints > 0 && (
+                <ul className="space-y-1.5 text-xs text-slate-300 pt-1">
+                  {currentExercise.hints.slice(0, revealedHints).map((hint, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-amber-400 font-mono">[{idx + 1}]</span>
+                      <span>{hint}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Execution Result Container */}
+            {executionResult.status !== 'idle' && (
+              <div className={`p-4 rounded-2xl border ${
+                executionResult.status === 'success'
+                  ? 'bg-emerald-950/20 border-emerald-800/60'
+                  : 'bg-slate-900 border-slate-800'
+              }`}>
+                <div className="flex items-center gap-2 mb-3">
+                  {executionResult.status === 'success' ? (
+                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <HelpCircle className="w-5 h-5 text-amber-400 animate-spin" />
+                  )}
+                  <h4 className="text-sm font-semibold text-white">
+                    {executionResult.message}
+                  </h4>
+                </div>
+
+                {executionResult.outputTable && executionResult.outputTable.length > 0 && (
+                  <div className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950">
+                    <table className="w-full text-left text-xs text-slate-300">
+                      <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
+                        <tr>
+                          {Object.keys(executionResult.outputTable[0]).map((col) => (
+                            <th key={col} className="px-3 py-2 font-semibold">
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 font-mono">
+                        {executionResult.outputTable.map((row, i) => (
+                          <tr key={i} className="hover:bg-slate-900/40">
+                            {Object.values(row).map((val, j) => (
+                              <td key={j} className="px-3 py-1.5 tabular-nums">
+                                {typeof val === 'number' ? val.toLocaleString('fr-FR') : String(val)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 2: Raw Data Table */}
+        {activeWorkspaceTab === 'data' && (
+          <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden">
+            <div className="p-4 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-white">{currentExercise.datasetName}</h3>
+                <p className="text-xs text-slate-400">{currentExercise.datasetDescription}</p>
+              </div>
+              <span className="text-xs text-slate-400 font-mono">
+                {currentExercise.sampleData.length} enregistrements
+              </span>
+            </div>
+
+            <div className="overflow-x-auto max-h-[500px]">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="sticky top-0 bg-slate-900 text-slate-400 border-b border-slate-800">
+                  <tr>
+                    {currentExercise.columns.map((col) => (
+                      <th key={col.key} className="px-4 py-2.5 font-semibold">
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {currentExercise.sampleData.map((row, i) => (
+                    <tr key={i} className="hover:bg-slate-800/40 transition-colors">
+                      {currentExercise.columns.map((col) => {
+                        const val = row[col.key];
+                        return (
+                          <td key={col.key} className={`px-4 py-2.5 ${col.type === 'number' ? 'font-mono tabular-nums' : ''}`}>
+                            {typeof val === 'number' ? val.toLocaleString('fr-FR') : (val ?? '-')}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Detailed Solution & Financial Debrief */}
+        {activeWorkspaceTab === 'solution' && (
+          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col gap-5">
+            {currentExercise.expectedResultMetric && (
+              <div className="p-4 rounded-xl bg-slate-950 border border-amber-600/30 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
+                    {currentExercise.expectedResultMetric.label}
+                  </span>
+                  <div className="text-2xl font-bold text-amber-400 font-mono tabular-nums mt-0.5">
+                    {currentExercise.expectedResultMetric.value}
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1">
+                    {currentExercise.expectedResultMetric.explanation}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h3 className="text-base font-bold text-white mb-2">
+                Analyse & Explication Économico-Financière
+              </h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                {currentExercise.solutionExplanation}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Code de Solution Recommandé ({language.toUpperCase()})
+                </span>
+                <button
+                  onClick={handleCopySolution}
+                  className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+                >
+                  {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedCode ? 'Copié !' : 'Copier'}</span>
+                </button>
+              </div>
+
+              <pre className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 font-mono text-xs leading-relaxed overflow-x-auto">
+                <code>{language === 'sql' ? currentExercise.solutionSQL : currentExercise.solutionPython}</code>
+              </pre>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

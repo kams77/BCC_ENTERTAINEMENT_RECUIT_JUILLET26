@@ -1,0 +1,6 @@
+{
+  "name": "BCC DataPrep - Admission Data Analyste",
+  "description": "Plateforme de préparation technique et méthodologique au concours d'admission Data Analyste à la Banque Centrale du Congo (BCC RDC) : exercices pratiques, fiches de révision et examens blancs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
