@@ -4,12 +4,15 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Header } from './components/Header';
+import { Header, NavigationTab } from './components/Header';
 import { ExerciseWorkspace } from './components/ExerciseWorkspace';
 import { ReadingModuleView } from './components/ReadingModuleView';
 import { MockExamSimulator } from './components/MockExamSimulator';
 import { DatasetExplorer } from './components/DatasetExplorer';
 import { StudyPlanView } from './components/StudyPlanView';
+import { FormulaCheatSheet } from './components/FormulaCheatSheet';
+import { GovernorNoteGenerator } from './components/GovernorNoteGenerator';
+import { LocalGuideView } from './components/LocalGuideView';
 
 import { exercises } from './data/exercises';
 import { readingCurriculum } from './data/readingCurriculum';
@@ -26,11 +29,14 @@ import {
   ChevronRight, 
   TrendingUp, 
   ShieldAlert,
-  GraduationCap
+  GraduationCap,
+  Calculator,
+  FileText,
+  Laptop
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'exercises' | 'reading' | 'exam' | 'datasets' | 'study-plan'>('exercises');
+  const [activeTab, setActiveTab] = useState<NavigationTab>('exercises');
 
   // Persisted state for completed exercises
   const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>(() => {
@@ -125,8 +131,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick Sub-navigation Bar for small viewports */}
-          <div className="flex lg:hidden items-center gap-2 mt-4 pt-4 border-t border-slate-800 overflow-x-auto text-xs">
+          {/* Quick Sub-navigation Bar for small/medium viewports */}
+          <div className="flex xl:hidden items-center gap-2 mt-4 pt-4 border-t border-slate-800 overflow-x-auto text-xs">
             <button
               onClick={() => setActiveTab('exercises')}
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
@@ -142,6 +148,22 @@ export default function App() {
               }`}
             >
               Matières à Lire ({completedModulesCount}/{readingCurriculum.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('formulas')}
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
+                activeTab === 'formulas' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              Formules & Ratios
+            </button>
+            <button
+              onClick={() => setActiveTab('note-governor')}
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
+                activeTab === 'note-governor' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              Note Gouverneur
             </button>
             <button
               onClick={() => setActiveTab('exam')}
@@ -167,6 +189,14 @@ export default function App() {
             >
               Plan d'Étude
             </button>
+            <button
+              onClick={() => setActiveTab('local-guide')}
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
+                activeTab === 'local-guide' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              Pack Local & GitHub
+            </button>
           </div>
         </section>
 
@@ -187,6 +217,14 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'formulas' && (
+          <FormulaCheatSheet />
+        )}
+
+        {activeTab === 'note-governor' && (
+          <GovernorNoteGenerator />
+        )}
+
         {activeTab === 'exam' && (
           <MockExamSimulator questions={mockExamQuestions} />
         )}
@@ -197,6 +235,10 @@ export default function App() {
 
         {activeTab === 'study-plan' && (
           <StudyPlanView onNavigateToTab={setActiveTab} />
+        )}
+
+        {activeTab === 'local-guide' && (
+          <LocalGuideView />
         )}
       </main>
 
