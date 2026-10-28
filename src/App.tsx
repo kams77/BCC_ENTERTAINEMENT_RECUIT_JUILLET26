@@ -6,6 +6,7 @@
 import React, { Suspense, lazy, useState } from 'react';
 import { Header, NavigationTab } from './components/Header';
 import { ProgressBackup } from './components/ProgressBackup';
+import { OfflineStatus } from './components/OfflineStatus';
 import { ProgressionBadge } from './components/ProgressionBadge';
 import { ProgressionDonutChart } from './components/ProgressionDonutChart';
 
@@ -344,13 +345,15 @@ export default function App() {
             <span>Préparation au Concours de Recrutement Data Analyste</span>
           </div>
 
-          <ProgressBackup />
-
           <div className="flex items-center gap-4 text-slate-400">
             <span>Banque Centrale du Congo</span>
             <span>·</span>
             <span>Boulevard Colonel Tshatshi, Gombe, Kinshasa</span>
           </div>
+        </div>
+        <div className="max-w-7xl mx-auto mt-4 pt-4 border-t border-slate-900 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <OfflineStatus />
+          <ProgressBackup />
         </div>
       </footer>
     </div>

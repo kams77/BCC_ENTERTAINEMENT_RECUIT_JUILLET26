@@ -12,6 +12,30 @@ Le projet combine :
 
 ---
 
+## ✅ Exercices exécutés pour de vrai
+
+Les exercices **ne sont plus simulés** : votre requête SQL est exécutée dans le navigateur (SQLite via sql.js) et votre script Python / pandas aussi (Pyodide, dans un Web Worker, arrêté après 15 s en cas de boucle infinie).
+
+- La correction compare votre résultat à celui de la **solution de référence exécutée sur les mêmes données** (aucune valeur attendue codée en dur).
+- SQL : les colonnes attendues doivent porter le bon nom ; l'ordre des lignes et les colonnes en plus sont tolérés ; les nombres sont comparés à 0,01 près.
+- Python : les valeurs affichées avec `print(...)` doivent contenir celles du résultat attendu (la mise en forme importe peu). Pas besoin de tout afficher en vrac : un affichage démesuré est refusé.
+- Un exercice n'est validé **que si le résultat est correct**. En cas d'échec, le message indique quelles colonnes ou combien de lignes posent problème, sans révéler la réponse.
+- Au premier lancement, les moteurs sont téléchargés depuis un CDN (Python + pandas : plusieurs Mo).
+
+---
+
+## 📴 Mode hors ligne
+
+La plateforme se comporte comme une application installable (PWA) :
+
+1. Déployez la version compilée (`npm run build`, puis hébergez `dist/`, ou testez avec `npm run preview`). Le mode hors ligne n'existe pas avec `npm run dev`.
+2. Ouvrez le site une première fois **avec Internet**, puis cliquez sur **« Préparer le mode hors ligne »** (pied de page) : les pages, le moteur SQL et le moteur Python sont mis en cache.
+3. Ensuite, tout fonctionne sans connexion : lecture, exercices SQL et Python, examen blanc, oral. Le bouton **« Installer l'application »** apparaît dans les navigateurs compatibles.
+
+Le site doit être servi en HTTPS (ou `localhost`) pour que le navigateur autorise le mode hors ligne.
+
+---
+
 ## 💾 Votre progression
 
 La progression (modules lus, exercices, examen blanc, oral, plan d'étude) est enregistrée **dans votre navigateur uniquement**. En pied de page, trois boutons permettent de la **sauvegarder** dans un fichier JSON, de la **restaurer** (autre appareil, cache vidé) ou de la **réinitialiser**.
