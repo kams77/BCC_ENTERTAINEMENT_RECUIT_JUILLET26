@@ -25,12 +25,16 @@ import {
 import { interviewQuestions, oralExamMethodology, InterviewQuestion } from '../data/interviewQuestions';
 
 interface InterviewPrepViewProps {
+  masteredQuestions: Record<string, boolean>;
+  onToggleMastered: (questionId: string) => void;
   strictMode?: boolean;
   isUnlocked?: boolean;
   onNavigateToRoadmap?: () => void;
 }
 
 export const InterviewPrepView: React.FC<InterviewPrepViewProps> = ({
+  masteredQuestions,
+  onToggleMastered,
   strictMode = true,
   isUnlocked = true,
   onNavigateToRoadmap,
@@ -45,31 +49,11 @@ export const InterviewPrepView: React.FC<InterviewPrepViewProps> = ({
   const [timerSeconds, setTimerSeconds] = useState<number>(120); // 2 minutes to respond
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
   
-  // Track mastered questions in localStorage
-  const [masteredQuestions, setMasteredQuestions] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('bcc_prep_mastered_interview');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  const toggleMastered = (questionId: string) => {
-    setMasteredQuestions((prev) => {
-      const updated = { ...prev, [questionId]: !prev[questionId] };
-      try {
-        localStorage.setItem('bcc_prep_mastered_interview', JSON.stringify(updated));
-      } catch (e) {
-        // ignore
-      }
-      return updated;
-    });
-  };
+  const toggleMastered = onToggleMastered;
 
   // Timer countdown effect in simulator
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (isTimerRunning && timerSeconds > 0) {
       interval = setInterval(() => {
         setTimerSeconds((prev) => (prev > 0 ? prev - 1 : 0));

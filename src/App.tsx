@@ -3,124 +3,101 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { Header, NavigationTab } from './components/Header';
-import { ExerciseWorkspace } from './components/ExerciseWorkspace';
-import { ReadingModuleView } from './components/ReadingModuleView';
-import { MockExamSimulator } from './components/MockExamSimulator';
-import { DatasetExplorer } from './components/DatasetExplorer';
-import { StudyPlanView } from './components/StudyPlanView';
-import { FormulaCheatSheet } from './components/FormulaCheatSheet';
-import { GovernorNoteGenerator } from './components/GovernorNoteGenerator';
-import { LocalGuideView } from './components/LocalGuideView';
+import { ProgressBackup } from './components/ProgressBackup';
+import { OfflineStatus } from './components/OfflineStatus';
 import { ProgressionBadge } from './components/ProgressionBadge';
 import { ProgressionDonutChart } from './components/ProgressionDonutChart';
-import { InterviewPrepView } from './components/InterviewPrepView';
-import { SequentialLearningRoadmap } from './components/SequentialLearningRoadmap';
 
 import { exercises } from './data/exercises';
 import { readingCurriculum } from './data/readingCurriculum';
 import { mockExamQuestions } from './data/mockExam';
 import { bccDatasets } from './data/bccDatasets';
-import { LEARNING_STEPS, isStepCompleted } from './data/learningPath';
+import {
+  STORAGE_KEYS,
+  readBoolean,
+  readJSON,
+  writeBoolean,
+  writeJSON,
+} from './lib/storage';
 
-import { 
-  Award, 
-  BookOpen, 
-  Code2, 
-  Database, 
-  Calendar, 
-  CheckCircle2, 
-  ChevronRight, 
-  TrendingUp, 
-  ShieldAlert,
-  GraduationCap,
-  Calculator,
-  FileText,
-  Laptop,
-  ShieldCheck,
-  Lock,
-  ArrowRight
-} from 'lucide-react';
+import { GraduationCap, ShieldCheck, ArrowRight } from 'lucide-react';
+
+// Chaque onglet est chargé à la demande : le premier affichage n'embarque que la feuille de route.
+const SequentialLearningRoadmap = lazy(() =>
+  import('./components/SequentialLearningRoadmap').then((m) => ({ default: m.SequentialLearningRoadmap }))
+);
+const ExerciseWorkspace = lazy(() =>
+  import('./components/ExerciseWorkspace').then((m) => ({ default: m.ExerciseWorkspace }))
+);
+const ReadingModuleView = lazy(() =>
+  import('./components/ReadingModuleView').then((m) => ({ default: m.ReadingModuleView }))
+);
+const MockExamSimulator = lazy(() =>
+  import('./components/MockExamSimulator').then((m) => ({ default: m.MockExamSimulator }))
+);
+const DatasetExplorer = lazy(() =>
+  import('./components/DatasetExplorer').then((m) => ({ default: m.DatasetExplorer }))
+);
+const StudyPlanView = lazy(() =>
+  import('./components/StudyPlanView').then((m) => ({ default: m.StudyPlanView }))
+);
+const FormulaCheatSheet = lazy(() =>
+  import('./components/FormulaCheatSheet').then((m) => ({ default: m.FormulaCheatSheet }))
+);
+const GovernorNoteGenerator = lazy(() =>
+  import('./components/GovernorNoteGenerator').then((m) => ({ default: m.GovernorNoteGenerator }))
+);
+const LocalGuideView = lazy(() =>
+  import('./components/LocalGuideView').then((m) => ({ default: m.LocalGuideView }))
+);
+const InterviewPrepView = lazy(() =>
+  import('./components/InterviewPrepView').then((m) => ({ default: m.InterviewPrepView }))
+);
+
+const TabFallback: React.FC = () => (
+  <div role="status" aria-live="polite" className="py-16 text-center text-sm text-slate-400">
+    Chargement…
+  </div>
+);
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavigationTab>('roadmap');
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | undefined>(undefined);
   const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>(undefined);
 
-  // Strict mode: requires prerequisites before unlocking subsequent steps
-  const [strictMode, setStrictMode] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('bcc_prep_strict_mode');
-      return saved !== null ? saved === 'true' : true; // Default true: strict progression
-    } catch {
-      return true;
-    }
-  });
+  // Mode strict : chaque étape terminée débloque la suivante (activé par défaut)
+  const [strictMode, setStrictMode] = useState<boolean>(() => readBoolean(STORAGE_KEYS.strictMode, true));
 
   const handleToggleStrictMode = () => {
     setStrictMode((prev) => {
       const next = !prev;
-      try {
-        localStorage.setItem('bcc_prep_strict_mode', String(next));
-      } catch (e) {
-        // ignore
-      }
+      writeBoolean(STORAGE_KEYS.strictMode, next);
       return next;
     });
   };
 
-  // Persisted state for completed exercises
-  const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('bcc_prep_completed_exercises');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  // Persisted state for read modules
-  const [completedModules, setCompletedModules] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('bcc_prep_completed_modules');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
-
-  // Track exam passed
-  const [hasPassedExam, setHasPassedExam] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('bcc_prep_exam_passed') === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  // Track mastered interviews count
-  const [masteredInterviewsCount, setMasteredInterviewsCount] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('bcc_prep_mastered_interview');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return Object.values(parsed).filter(Boolean).length;
-      }
-      return 0;
-    } catch {
-      return 0;
-    }
-  });
+  const [completedExercises, setCompletedExercises] = useState<Record<string, boolean>>(() =>
+    readJSON(STORAGE_KEYS.completedExercises, {})
+  );
+  const [completedModules, setCompletedModules] = useState<Record<string, boolean>>(() =>
+    readJSON(STORAGE_KEYS.completedModules, {})
+  );
+  const [hasPassedExam, setHasPassedExam] = useState<boolean>(() =>
+    readBoolean(STORAGE_KEYS.examPassed, false)
+  );
+  // Questions d'oral maîtrisées : état unique ici, pour que la feuille de route
+  // se mette à jour immédiatement (avant, il n'était lu qu'au chargement de la page).
+  const [masteredQuestions, setMasteredQuestions] = useState<Record<string, boolean>>(() =>
+    readJSON(STORAGE_KEYS.masteredInterview, {})
+  );
+  const masteredInterviewsCount = Object.values(masteredQuestions).filter(Boolean).length;
 
   const handleToggleCompleteExercise = (exerciseId: string) => {
     setCompletedExercises((prev) => {
       const updated = { ...prev, [exerciseId]: !prev[exerciseId] };
-      try {
-        localStorage.setItem('bcc_prep_completed_exercises', JSON.stringify(updated));
-      } catch (e) {
-        // ignore
-      }
+      writeJSON(STORAGE_KEYS.completedExercises, updated);
       return updated;
     });
   };
@@ -128,11 +105,15 @@ export default function App() {
   const handleToggleCompleteModule = (moduleId: string) => {
     setCompletedModules((prev) => {
       const updated = { ...prev, [moduleId]: !prev[moduleId] };
-      try {
-        localStorage.setItem('bcc_prep_completed_modules', JSON.stringify(updated));
-      } catch (e) {
-        // ignore
-      }
+      writeJSON(STORAGE_KEYS.completedModules, updated);
+      return updated;
+    });
+  };
+
+  const handleToggleMastered = (questionId: string) => {
+    setMasteredQuestions((prev) => {
+      const updated = { ...prev, [questionId]: !prev[questionId] };
+      writeJSON(STORAGE_KEYS.masteredInterview, updated);
       return updated;
     });
   };
@@ -155,6 +136,19 @@ export default function App() {
   const isNoteUnlocked = !strictMode || !!completedModules['module-6-methodologie-admission'];
   const isExamUnlocked = !strictMode || (completedModulesCount >= 4 && completedExercisesCount >= 4);
   const isInterviewUnlocked = !strictMode || hasPassedExam;
+
+  const quickNavTabs: { id: NavigationTab; label: string }[] = [
+    { id: 'roadmap', label: 'Parcours Séquentiel' },
+    { id: 'exercises', label: `Exercices (${completedExercisesCount}/${exercises.length})` },
+    { id: 'reading', label: `Matières à Lire (${completedModulesCount}/${readingCurriculum.length})` },
+    { id: 'formulas', label: 'Formules & Ratios' },
+    { id: 'note-governor', label: 'Note Gouverneur' },
+    { id: 'exam', label: 'Examen Blanc' },
+    { id: 'interview', label: 'Entretien & Oral' },
+    { id: 'datasets', label: 'Données BCC' },
+    { id: 'study-plan', label: "Plan d'Étude" },
+    { id: 'local-guide', label: 'Pack Local & GitHub' },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
@@ -202,90 +196,25 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick Sub-navigation Bar for small/medium viewports */}
-          <div className="flex xl:hidden items-center gap-2 mt-4 pt-4 border-t border-slate-800 overflow-x-auto text-xs">
-            <button
-              onClick={() => setActiveTab('roadmap')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
-                activeTab === 'roadmap' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Parcours Séquentiel</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('exercises')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
-                activeTab === 'exercises' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              Exercices ({completedExercisesCount}/{exercises.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('reading')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
-                activeTab === 'reading' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              Matières à Lire ({completedModulesCount}/{readingCurriculum.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('formulas')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
-                activeTab === 'formulas' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              Formules & Ratios
-            </button>
-            <button
-              onClick={() => setActiveTab('note-governor')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
-                activeTab === 'note-governor' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              Note Gouverneur
-            </button>
-            <button
-              onClick={() => setActiveTab('exam')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
-                activeTab === 'exam' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              Examen Blanc
-            </button>
-            <button
-              onClick={() => setActiveTab('interview')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
-                activeTab === 'interview' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              Entretien & Oral
-            </button>
-            <button
-              onClick={() => setActiveTab('datasets')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
-                activeTab === 'datasets' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              Données BCC
-            </button>
-            <button
-              onClick={() => setActiveTab('study-plan')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
-                activeTab === 'study-plan' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              Plan d'Étude
-            </button>
-            <button
-              onClick={() => setActiveTab('local-guide')}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
-                activeTab === 'local-guide' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              Pack Local & GitHub
-            </button>
-          </div>
+          {/* Barre de navigation rapide (petits et moyens écrans) */}
+          <nav
+            aria-label="Navigation rapide"
+            className="flex xl:hidden items-center gap-2 mt-4 pt-4 border-t border-slate-800 overflow-x-auto text-xs"
+          >
+            {quickNavTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                aria-current={activeTab === tab.id ? 'page' : undefined}
+                className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 ${
+                  activeTab === tab.id ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </section>
 
         {/* Global Progression Alert Banner when not on roadmap */}
@@ -324,6 +253,7 @@ export default function App() {
         )}
 
         {/* Tab Viewport */}
+        <Suspense fallback={<TabFallback />}>
         {activeTab === 'roadmap' && (
           <SequentialLearningRoadmap
             completedModules={completedModules}
@@ -384,6 +314,8 @@ export default function App() {
 
         {activeTab === 'interview' && (
           <InterviewPrepView
+            masteredQuestions={masteredQuestions}
+            onToggleMastered={handleToggleMastered}
             strictMode={strictMode}
             isUnlocked={isInterviewUnlocked}
             onNavigateToRoadmap={() => setActiveTab('roadmap')}
@@ -401,6 +333,7 @@ export default function App() {
         {activeTab === 'local-guide' && (
           <LocalGuideView />
         )}
+        </Suspense>
       </main>
 
       {/* Institutional Footer */}
@@ -417,6 +350,10 @@ export default function App() {
             <span>·</span>
             <span>Boulevard Colonel Tshatshi, Gombe, Kinshasa</span>
           </div>
+        </div>
+        <div className="max-w-7xl mx-auto mt-4 pt-4 border-t border-slate-900 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <OfflineStatus />
+          <ProgressBackup />
         </div>
       </footer>
     </div>

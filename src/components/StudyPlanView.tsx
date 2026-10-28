@@ -11,6 +11,7 @@ import {
   Award
 } from 'lucide-react';
 import { studyPlans, StudyPlan } from '../data/studyPlans';
+import { STORAGE_KEYS, readJSON, writeJSON } from '../lib/storage';
 
 interface StudyPlanViewProps {
   onNavigateToTab: (tab: 'exercises' | 'reading' | 'exam') => void;
@@ -18,23 +19,14 @@ interface StudyPlanViewProps {
 
 export const StudyPlanView: React.FC<StudyPlanViewProps> = ({ onNavigateToTab }) => {
   const [selectedPlanId, setSelectedPlanId] = useState<'plan-7-days' | 'plan-14-days'>('plan-14-days');
-  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('bcc_prep_study_tasks');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>(() =>
+    readJSON(STORAGE_KEYS.studyTasks, {})
+  );
 
   const toggleTask = (taskId: string) => {
     setCompletedTasks((prev) => {
       const updated = { ...prev, [taskId]: !prev[taskId] };
-      try {
-        localStorage.setItem('bcc_prep_study_tasks', JSON.stringify(updated));
-      } catch (e) {
-        // ignore
-      }
+      writeJSON(STORAGE_KEYS.studyTasks, updated);
       return updated;
     });
   };
