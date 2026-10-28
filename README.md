@@ -12,31 +12,13 @@ Le projet combine :
 
 ---
 
-## 🚀 Procédure 1 : Envoi (Push) vers votre GitHub
+## 💾 Votre progression
 
-Pour pousser ce projet complet sur votre dépôt GitHub **`https://github.com/kams77/BCC_ENTERTAINEMENT_RECUIT_JUILLET26.git`** :
-
-### Méthode A : Avec un Personal Access Token (PAT) GitHub (Recommandée)
-1. Créez un token sur GitHub : allez sur **GitHub.com > Settings > Developer Settings > Personal access tokens (classic)**, cochez la case **`repo`** et générez le token.
-2. Dans le terminal de votre projet, exécutez les commandes suivantes (en remplaçant `<VOTRE_TOKEN>` par votre token généré) :
-
-```bash
-git remote set-url origin https://<VOTRE_TOKEN>@github.com/kams77/BCC_ENTERTAINEMENT_RECUIT_JUILLET26.git
-git branch -M main
-git push -u origin main
-```
-
-### Méthode B : Avec votre clé SSH
-Si vous avez configuré une clé SSH sur GitHub :
-```bash
-git remote set-url origin git@github.com:kams77/BCC_ENTERTAINEMENT_RECUIT_JUILLET26.git
-git branch -M main
-git push -u origin main
-```
+La progression (modules lus, exercices, examen blanc, oral, plan d'étude) est enregistrée **dans votre navigateur uniquement**. En pied de page, trois boutons permettent de la **sauvegarder** dans un fichier JSON, de la **restaurer** (autre appareil, cache vidé) ou de la **réinitialiser**.
 
 ---
 
-## 💻 Procédure 2 : Récupération et Pratique en Local sur votre Machine
+## 💻 Pratique en Local sur votre Machine
 
 ### Étape 1 : Cloner le dépôt sur votre ordinateur
 Ouvrez votre terminal (ou invite de commande PowerShell / Git Bash) sur votre machine locale :
@@ -58,7 +40,7 @@ npm install
 # 2. Lancer le serveur de développement local
 npm run dev
 ```
-Ouvrez ensuite votre navigateur sur **`http://localhost:3000`** ou **`http://localhost:5173`** : vous aurez accès à l'interface complète (Exercices, Fiches de lecture, Examen blanc, Données du Condensé).
+Ouvrez ensuite votre navigateur sur **`http://localhost:3000`** : vous aurez accès à l'interface complète (Exercices, Fiches de lecture, Examen blanc, Données du Condensé).
 
 ---
 
