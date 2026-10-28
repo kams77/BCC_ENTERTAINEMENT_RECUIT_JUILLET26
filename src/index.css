@@ -8,6 +8,11 @@
   code, pre, kbd, samp, .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+
+  .font-sovereign {
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.04em;
+  }
 }
 
 /* Custom scrollbars for data tables and code areas */

@@ -24,7 +24,6 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { ExamQuestion } from '../types';
-import { STORAGE_KEYS, writeBoolean } from '../lib/storage';
 
 interface MockExamSimulatorProps {
   questions: ExamQuestion[];
@@ -69,7 +68,7 @@ export const MockExamSimulator: React.FC<MockExamSimulatorProps> = ({
 
   // Tick timer every second
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
+    let interval: NodeJS.Timeout | null = null;
 
     if (examState === 'running' && !isPaused) {
       interval = setInterval(() => {
@@ -158,7 +157,11 @@ export const MockExamSimulator: React.FC<MockExamSimulatorProps> = ({
       return acc;
     }, 0);
     if ((earnedPts / (totalPts || 1)) >= 0.70) {
-      writeBoolean(STORAGE_KEYS.examPassed, true);
+      try {
+        localStorage.setItem('bcc_prep_exam_passed', 'true');
+      } catch (e) {
+        // ignore
+      }
       onExamPassed?.();
     }
   };

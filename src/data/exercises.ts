@@ -336,16 +336,16 @@ FROM bcc_composantes_situation_monetaire;`,
     initialCodePython: `# Calcul des agrégats monétaires avec Pandas
 import pandas as pd
 
-# df contient les composantes monétaires (en Mrd CDF) :
-# base_monetaire_m0, billets_hors_banques, depots_vue_cdf,
-# depots_terme_cdf, depots_devises_cdf_eq
+# df contient les composantes monétaires
+df['m1_mrd'] = df['billets_hors_banques'] + df['depots_vue_cdf']
+df['m2_mrd'] = df['m1_mrd'] + df['depots_terme_cdf']
+df['m3_mrd'] = df['m2_mrd'] + df['depots_devises_cdf_eq']
 
-# 1. M1 = billets hors banques + dépôts à vue
-# 2. M2 = M1 + dépôts à terme
-# 3. M3 = M2 + dépôts en devises (équivalent CDF)
-# 4. taux_dollarisation_pct = dépôts en devises / total des dépôts * 100 (2 décimales)
-# 5. multiplicateur_k = M2 / base monétaire M0 (2 décimales)
-# 6. Affichez : trimestre, m1_mrd, m2_mrd, m3_mrd, taux_dollarisation_pct, multiplicateur_k
+total_depots = df['depots_vue_cdf'] + df['depots_terme_cdf'] + df['depots_devises_cdf_eq']
+df['taux_dollarisation_pct'] = (df['depots_devises_cdf_eq'] / total_depots * 100).round(2)
+df['multiplicateur_k'] = (df['m2_mrd'] / df['base_monetaire_m0']).round(2)
+
+print(df[['trimestre', 'm1_mrd', 'm2_mrd', 'm3_mrd', 'taux_dollarisation_pct', 'multiplicateur_k']])
 `,
     solutionSQL: `SELECT 
     trimestre,
@@ -357,7 +357,7 @@ import pandas as pd
         2
     ) AS taux_dollarisation_pct,
     ROUND(
-        CAST(billets_hors_banques + depots_vue_cdf + depots_terme_cdf AS REAL) / base_monetaire_m0, 
+        (billets_hors_banques + depots_vue_cdf + depots_terme_cdf)::NUMERIC / base_monetaire_m0, 
         2
     ) AS multiplicateur_k
 FROM bcc_composantes_situation_monetaire
